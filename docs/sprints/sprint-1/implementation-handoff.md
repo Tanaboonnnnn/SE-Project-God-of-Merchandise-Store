@@ -1,5 +1,7 @@
 # Campus Store Sprint 1 — Pre-Implementation Handoff (No Code)
 
+> **Status correction (2026-11-03):** PR #1 is approved and merged into `sprint/1-staging` at `32e489f`; the earlier Changes Requested/pending-review references below are **historical and superseded**. Issue #3 GP-01 is now being worked via PR #11. Current decisions, remaining gates and native PostgreSQL plan: [`gp-01-readiness.md`](gp-01-readiness.md). No feature application build/tests/release exists yet.
+
 > **Status:** Revised planning handoff, 2026-11-02; **not execution-ready**. Business scope FRZ-S1 is approved. Actual group repository `Tanaboonnnnn/SE-Project-God-of-Merchandise-Store` was inspected on `docs/sprint1-baseline-draft`: the initial codebase contains documentation only and no `AGENTS.md`, app code, manifests or test baseline. **PR #1 has a teammate Changes Requested review (CR-ENG-001); revised engineering proposals still need re-review.** Stack, exact dispatch-origin coordinates, Part E contracts and team capacity remain unresolved. No application code/build/tests were produced by these documentation revisions.
 >
 > **Supersedes:** `docs/superpowers/plans/2026-11-01-ecommerce-sprint-1.md`, an outdated, pre-freeze plan. Do not follow its code steps until its conflicts are resolved and this handoff is converted into a repo-grounded implementation plan.
