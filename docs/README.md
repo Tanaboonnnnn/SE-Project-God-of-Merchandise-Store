@@ -1,5 +1,7 @@
 # Campus Store — CPE334 Engineering Documents
 
+> **Status correction (2026-11-03):** PR #1 was approved and merged into `sprint/1-staging` (commit `32e489f`); Issue #2 is Done. GP-01 is now [Issue #3](https://github.com/Tanaboonnnnn/SE-Project-God-of-Merchandise-Store/issues/3) / [PR #11](https://github.com/Tanaboonnnnn/SE-Project-God-of-Merchandise-Store/pull/11), currently in review. Earlier lines below describing PR #1 as pending review are **historical and superseded**. No app release is implied. For current setup decisions see [`sprints/sprint-1/gp-01-readiness.md`](sprints/sprint-1/gp-01-readiness.md).
+
 **Documentation snapshot:** 2026-11-02 · **Business scope frozen:** FRZ-S1, DEC-001 through DEC-034 + MAP-COST-001.
 
 **Document status:** These are substantive **DRAFTS FOR TEAM REVIEW**, not instructor-approved specifications or a working software release. The team opened [Issue #2](https://github.com/Tanaboonnnnn/SE-Project-God-of-Merchandise-Store/issues/2) and [PR #1](https://github.com/Tanaboonnnnn/SE-Project-God-of-Merchandise-Store/pull/1) (`docs/sprint1-baseline-draft` → `sprint/1-staging`); teammate `Chxtamos` requested changes on 2026-11-02 (**CR-ENG-001 A–E**). The engineering docs have been revised as a **proposal pending renewed review**. No application code, automated tests or release evidence exists yet.

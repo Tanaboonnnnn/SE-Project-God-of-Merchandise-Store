@@ -1,5 +1,7 @@
 # Campus Store — Three-Sprint Delivery Plan (Part D)
 
+> **Status correction (2026-11-03):** PR #1 was approved and merged to `sprint/1-staging`; Issue #2 is Done. All nine work-package Issues now exist (#2?#10); GP-01 = [Issue #3](https://github.com/Tanaboonnnnn/SE-Project-God-of-Merchandise-Store/issues/3), PR #11 currently under review. Historical instructions below forbidding Issue creation / describing only GP-02 as created are **superseded**. No implementation tests have passed. **Capacity gate remains open:** the team has not provided verified day-by-day availability; 67?111 person-hours are estimates, not committed hours. Before accepting a Sprint 1 completion forecast, both contributors must record hours available on 3,4,5,6,7,8 Nov and revise schedule/risks accordingly; escalate a scope/deadline change to instructor if insufficient.
+
 > **Status:** Draft v0.2, 2026-11-02; revised for teammate **CR-ENG-001 (PR #1, Changes Requested)**. Business scope of **Sprint 1 remains frozen by FRZ-S1 (DEC-001..034 and MAP-COST-001)**. The group repo was inspected at its documentation-only starting state; **actual team availability, stack and estimates are not yet validated**. No application implementation or test execution has occurred.
 >
 > **Instructor source:** `group_work_specs_v1.pdf` §§4,7–9 and `project_deliverable_1_v1.pdf` §3.4. Source master is labelled *Draft for instructor review*. Check for latest authoritative version before final submission.
