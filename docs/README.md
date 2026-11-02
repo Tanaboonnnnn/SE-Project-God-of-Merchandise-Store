@@ -2,7 +2,7 @@
 
 **Documentation snapshot:** 2026-11-02 · **Business scope frozen:** FRZ-S1, DEC-001 through DEC-034 + MAP-COST-001.
 
-**Document status:** These are substantive **DRAFTS FOR TEAM REVIEW**, not instructor-approved specifications or a working software release. No application code, automated test, Issue, PR or release was produced by this documentation-only session.
+**Document status:** These are substantive **DRAFTS FOR TEAM REVIEW**, not instructor-approved specifications or a working software release. The team opened [Issue #2](https://github.com/Tanaboonnnnn/SE-Project-God-of-Merchandise-Store/issues/2) and [PR #1](https://github.com/Tanaboonnnnn/SE-Project-God-of-Merchandise-Store/pull/1) (`docs/sprint1-baseline-draft` → `sprint/1-staging`); teammate `Chxtamos` requested changes on 2026-11-02 (**CR-ENG-001 A–E**). The engineering docs have been revised as a **proposal pending renewed review**. No application code, automated tests or release evidence exists yet.
 
 | Instructor Part | Primary file | Status and purpose |
 |---|---|---|
@@ -25,10 +25,10 @@
 
 ## How to proceed without falsely claiming readiness
 
-1. Obtain teammate review and inspect the **actual group repository** and its `AGENTS.md` (not done by this task); verify the shipping-origin coordinates and any revised course instructions.
+1. Re-request teammate review of [PR #1](https://github.com/Tanaboonnnnn/SE-Project-God-of-Merchandise-Store/pull/1) after addressing CR-ENG-001. The actual group repo was inspected: it has no application code and no `AGENTS.md` at this stage. Verify shipping-origin coordinates and any revised course instructions.
 2. Accept/revise the **proposed engineering decisions** in System SDS and measurable NFR targets without silently changing FRZ-S1 business rules.
 3. Author **Part E** (F-01..06 Feature-Level SDS, UI/API/data contract, numbered AC/STS and DoD) and preserve spec-before-code history.
 4. Only after authorization, implement and execute tests, stage/review/release and collect **Part F real evidence**. Package a **self-contained PDF** with complete Parts A–E and actual Part F evidence for LEB2; these Markdown drafts **are not that PDF**.
 
-No code, build, test run, GitHub Issue/PR, deployment or submission is implied by a document existing.
+No application code, build, test execution, deployment or submission is implied by a document existing; an open documentation PR is **not** evidence of completed Sprint 1 software.
 > Historical November 1 plan is intentionally excluded from this initial repository import because its implementation instructions conflict with the frozen business scope. See `sprints/sprint-1/implementation-handoff.md` for the conflict audit.

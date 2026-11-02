@@ -32,7 +32,7 @@ FR means observable application capability. Sprint 1 entries are **approved busi
 | FR-05 | Collect recipient name, ten-digit leading-zero Thai mobile, structured address, five-digit postal code, and a province selected from a Thai list; perform server-side validation. | 1 | F-03 | AC-F03-01 |
 | FR-06 | Let Customer choose destination map pin; preserve form/cart and offer Retry if map fails; require reconfirmation of saved pin when map remains unavailable. | 1 | F-03 | AC-F03-02; AC-F03-05 |
 | FR-07 | Calculate shipping distance/fee using backend and display item subtotal, shipping fee and full order total before final order confirmation; persist server-calculated amounts. | 1 | F-03,F-04 | AC-F03-03; AC-F04-01 |
-| FR-08 | Present full entered address and selected pin and require explicit Customer acknowledgement before every checkout submission; invalidate acknowledgement if those inputs change. | 1 | F-03 | AC-F03-04 |
+| FR-08 | Present full current recipient/contact/address and selected pin and require explicit Customer acknowledgement before every checkout submission; invalidate it when any confirmed destination field or pin changes, then require reconfirmation. No automatic written-address-to-pin matching. | 1 | F-03 | AC-F03-04 |
 | FR-09 | Accept one or more selectable order lines only when all lines pass validation and inventory checks, without partially creating an Order. | 1 | F-04 | AC-F04-01; AC-F04-03 |
 | FR-10 | Persist the complete Order, normalized Order Items and price/address/pin/charge snapshots in the database. | 1 | F-04 | AC-F04-01; AC-F04-02 |
 | FR-11 | Prevent duplicate Order and duplicate stock reservation on retries of one logical checkout using backend Idempotency Key and frontend submission lock. | 1 | F-04 | AC-F04-04 |
@@ -89,8 +89,8 @@ These test targets are **proposed engineering-level acceptance thresholds**, not
 | NFR-01 | Access isolation: every planned negative auth/role/owner API case returns no protected payload; verify 401/403/404 policy using automated integration tests. | 1 | F-01,F-05,F-06 | TEST-F01-02; TEST-F05-03; TEST-F06-04 |
 | NFR-02 | Credential safety: zero plaintext seeded password values in stored password fields, password verification against salted adaptive hashes, and no credentials in committed tracked files; inspect schema and test DB. | 1 | F-01 | TEST-F01-01; security inspection |
 | NFR-03 | Persistence: a successfully submitted Order, line snapshots, selected pin and status survive an API process restart and are retrievable by the owner; verify on real test database. | 1 | F-04,F-05 | TEST-F04-01; TEST-F05-01 |
-| NFR-04 | Transactional integrity: in at least 10 simultaneous 1-unit requests with stock=1, no more than one reservation succeeds; in competing Accept/Reject/Cancel, no stock is transferred or released twice. | 1 | F-04,F-05,F-06 | TEST-F04-05; TEST-F06-04 |
-| NFR-05 | Retry integrity: two same-key retries (including concurrent requests) yield at most one persisted Order and one reservation; test with DB evidence. | 1 | F-04 | TEST-F04-04 |
+| NFR-04 | Transactional integrity: in at least 10 simultaneous 1-unit requests with stock=1, no more than one reservation succeeds; all-line rollback on stock failure, and competing Accept/Reject/Cancel never transfer/release stock twice. Inject a DB failure between status and stock updates and prove both roll back. | 1 | F-04,F-05,F-06 | TEST-F04-05; TEST-F06-04 |
+| NFR-05 | Retry integrity: two same-key retries (including concurrent requests) yield at most one persisted Order and reservation; same-key changed-payload conflicts, incomplete attempts cannot generate duplicates, and failed transactions leave no committed key claim. Test on a real DB. | 1 | F-04 | TEST-F04-04 |
 | NFR-06 | Release reproducibility: document commands to install, migrate, seed, build and run automated tests; for accepted S1 release, record exact commit SHA, counts of pass/fail/skip and zero failing required tests. | 1 | F-01,F-02,F-03,F-04,F-05,F-06 | release evidence check (Part F) |
 | NFR-07 | Configuration hygiene: real secrets absent from Git/client bundles; env example names and local setup instructions documented; inspect tracked files and build artifacts. | 1 | F-01,F-03,F-04 | configuration review |
 | NFR-08 | Local seeded-demo responsiveness (proposed target): p95 GET catalog and owner order detail <=2.0 seconds over 50 sequential requests after warm-up; report machine/test DB setup and actual measurement. | 1 | F-02,F-05 | TEST-PERF-01 (planned) |
@@ -119,11 +119,11 @@ Each line counts against the total of **1–10 integer units per exact option** 
 ## 7. Explicit negative and boundary cases
 
 - Login with invalid password and anonymous `/me`/orders; customer attempts Operator Accept/Reject; Customer B reads/cancels Customer A's Order.
-- Blank address/recipient, invalid Thai phone/postcode, missing pin/acknowledgement, invalid province; unavailable map with/without retained pin; no geocoding-based inference.
+- Blank address/recipient, invalid Thai phone/postcode, missing pin/acknowledgement, invalid province; **edit any confirmed destination field or pin and try to submit without reconfirmation**; stale confirmed revision/quote rejected with no Order. Map unavailable with/without retained pin; no geocoding-based inference.
 - Raw line with zero, negative, fractional, nonnumeric or missing quantity; duplicated lines totaling 11; stock less than requested; invalid item; manipulated client prices/totals; no partial Order or reservation.
-- Replayed same checkout key (including concurrent retries) must not create a second Order; changed payload with reused key needs explicit engineering-contract conflict handling.
+- Replayed same checkout key (including concurrent retries) must not create a second Order; changed payload with reused key must fail without changing the original. **Proposed** wire responses, key retention and in-flight semantics are in System SDS §6 and require Part E approval; they are not new frozen Business Rules.
 - Boundary distance exactly 50 km and exactly 300 km versus immediately beyond thresholds; fee computed backend from unrounded distance.
-- Two simultaneous claims for the last stock unit; competing Accept/Reject/Cancel; duplicate release/deduction; Reject with whitespace reason; attempted edit of already submitted Order.
+- Two simultaneous claims for the last stock unit, multi-line transaction rollback, competing Accept/Reject/Cancel, injected failure after status write, duplicate release/deduction, Reject with whitespace reason, attempted edit of already submitted Order.
 
 ## 8. Decisions, open engineering inputs and change control
 

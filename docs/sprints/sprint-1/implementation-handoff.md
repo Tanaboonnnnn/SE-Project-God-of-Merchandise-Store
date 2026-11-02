@@ -1,6 +1,6 @@
 # Campus Store Sprint 1 — Pre-Implementation Handoff (No Code)
 
-> **Status:** Planning handoff, 2026-11-02. **Not execution-ready.** Business scope FRZ-S1 is approved; actual group repository/`AGENTS.md`, implementation stack, exact dispatch-origin coordinates, feature-level contracts and teammate review have not been verified in this documentation-only task. No application code, GitHub Issues/PRs, build or tests were created or executed.
+> **Status:** Revised planning handoff, 2026-11-02; **not execution-ready**. Business scope FRZ-S1 is approved. Actual group repository `Tanaboonnnnn/SE-Project-God-of-Merchandise-Store` was inspected on `docs/sprint1-baseline-draft`: the initial codebase contains documentation only and no `AGENTS.md`, app code, manifests or test baseline. **PR #1 has a teammate Changes Requested review (CR-ENG-001); revised engineering proposals still need re-review.** Stack, exact dispatch-origin coordinates, Part E contracts and team capacity remain unresolved. No application code/build/tests were produced by these documentation revisions.
 >
 > **Supersedes:** `docs/superpowers/plans/2026-11-01-ecommerce-sprint-1.md`, an outdated, pre-freeze plan. Do not follow its code steps until its conflicts are resolved and this handoff is converted into a repo-grounded implementation plan.
 
@@ -29,7 +29,7 @@
 | Future simulated payment labels mixed with S1 | S1 explicitly **has no Payment Status** | Plan F-09 simulated payment for S2 only | DEC-028 |
 | Catalog and price data unspecific | Team approved seed fixture | 6 products, 12 sellable options, per-unit prices 250/290/180/70/25/220 THB, 160 Available | DEC-014/015/020..022 |
 
-The older plan also refers to a **greenfield proposed React/Express/Prisma structure**, not to inspected code. Do **not** assume those paths or scripts exist; inspect the real group repository before file-level implementation planning.
+The older plan also refers to a **greenfield proposed React/Express/Prisma structure**, not to implemented code. Actual repo inspection confirmed a documentation-only baseline; do **not** assume the proposed paths or scripts exist. Agree the stack and test commands before file-level implementation planning.
 
 ## 3. Documentation-only artifacts created in this phase
 
@@ -58,14 +58,14 @@ The rows are **handoff anchors**. Concrete request/response schemas, edge cases,
 | Gate | Required evidence before implementation |
 |---|---|
 | Course authority | Confirm the currently assigned Theme #4 is accepted for the team and current handout version is authoritative; preserve source/date |
-| Repository | Actual group repo URL, branch convention, `AGENTS.md`, existing source/build/test scripts, dependencies, DB, test baseline; observe only until code work approved |
+| Repository | **Observed:** `Tanaboonnnnn/SE-Project-God-of-Merchandise-Store`, documentation-only branch `docs/sprint1-baseline-draft`, no `AGENTS.md` or app code/build/test scripts yet. **Still needed:** select/approve stack, seed/DB strategy, executable test commands and file-level plan |
 | Source-verified origin | Fixed latitude and longitude around KMUTT Bangmod campus center, exact reference and date (do not invent coordinates) |
 | Shipping | Verified origin, deterministic Haversine convention, fee boundaries, non-Thai pin policy, numeric validity, backend computation failure behavior |
-| Thai address | Province dataset/list and validation, field max lengths, phone/postal digits, cart/form persistence on map failure and explicit reconfirmation UX |
+| Thai address | Province dataset/list and validation, field max lengths, phone/postal digits; confirmation **invalidated on any destination/pin edit**; quote/payload revision verification and cart/form persistence on map failure |
 | Auth | Chosen session/cookie/token lifecycle, logout/expiry, password hashing, CSRF/CORS and local seed account handoff without committed secrets |
-| Inventory and checkout | DB isolation/locking, idempotency key scope/retention/in-flight/changed-payload responses, query error structure, immutable snapshots, exact transitions |
+| Inventory and checkout | **CR-ENG-001 B/C/D proposal:** guarded per-option `available >= quantity` updates with full rollback; `(customer_id, key)` unique idempotency plus canonical payload fingerprint/no Sprint 1 expiry, replay/mismatch/in-flight responses; status/reason/stock change in the **same** transaction. Validate against chosen DB engine in Part E |
 | Feature contracts | Each S1 F-01..06 needs versioned Feature SDS + UI/API/data specs + AC + STS with test inputs/preconditions/expected output and DoD, reviewed *before* application code |
-| Team review | Second member independently reviews scope/architecture/contract and participates across coding/tests/PR reviews |
+| Team review | `Chxtamos` reviewed PR #1 and requested changes (CR-ENG-001, A–E). Address requested changes, reply with exact artifact/section references, and **request a fresh review**; do not mark this PR approved. Both members participate in code/tests/review |
 
 ## 5. Next-agent work order (planning only; no app code permitted in this handoff)
 
@@ -83,12 +83,26 @@ The rows are **handoff anchors**. Concrete request/response schemas, edge cases,
 |---|---|
 | Auth/ownership | Customer B cannot inspect Customer A's Order or rejection reason; Customer cannot accept/reject |
 | Catalog | Exactly 6 products / 12 options; starting 160 Available; shirt sizes independent; correct seeded prices |
-| Delivery | Missing/unconfirmed pin blocked; invalid phone/postcode rejected; map outage persists form; fee at 50/300km boundaries |
+| Delivery | Missing/unconfirmed pin blocked; editing any confirmed recipient/address/postcode/province/pin invalidates acknowledgement; stale quote revision rejected; invalid phone/postcode rejected; map outage persists form; fee at 50/300km boundaries |
 | Order | Duplicate 3+2 notebooks persists one line qty 5; 6+5 rejected; invalid line rolls back all; price tamper ignored/rejected |
-| Concurrency | Two requests for last unit cannot both reserve; two retry requests with same key cannot create duplicate order |
-| Status | Accept Reserved→Sold once; Reject with nonblank reason releases once; owner Cancel Pending releases once; terminal state retry no extra mutation |
+| Concurrency | Two distinct requests for last unit cannot both reserve; multi-item late-failure rolls back all; duplicate same-key request returns same Order, reused key/different payload conflicts, in-flight same-key cannot double-reserve |
+| Status | Accept Reserved→Sold once; Reject with nonblank reason releases once; owner Cancel Pending releases once; status/reason and inventory in one transaction; injected error or losing competing transition changes nothing |
 | Persisted truth | Customer refresh shows latest state; order snapshots persist across restart; frontend-only success is not sufficient |
 
 ## 7. No-claim / stop conditions
 
-**Stop before code** until the actual repository is identified, engineering gaps and Part E contracts are reviewed, and team authorizes implementation. **Do not** mark Part A–D as instructor-approved; do not invent the codebase, PRs, tests, Git release SHAs, deployment or LEB2 submission. If six-calendar-day time pressure requires fewer features, formally request and approve a scope change; never drop DEC-008 map/shipping or other frozen features silently.
+**Stop before code** until the remaining engineering gates and Part E contracts are reviewed, the requested changes to PR #1 are accepted, and the team authorizes implementation. The source repo/PR/Issue are known; **do not** mark Part A–D as instructor-approved or invent test runs, Git release SHAs, deployment or LEB2 submission. If the two-person capacity assessment shows the deadline is infeasible, formally request and approve a scope change; never drop DEC-008 map/shipping or other frozen features silently.
+
+## 8. CR-ENG-001 requested-changes response map (documentation proposal; re-review pending)
+
+The teammate review on [PR #1](https://github.com/Tanaboonnnnn/SE-Project-God-of-Merchandise-Store/pull/1) requested A–E. These are **design clarifications and planned tests**, not implemented behavior, successful test evidence or changes to the FRZ-S1 Business Scope.
+
+| Reviewer item | Where addressed | How the reviewer can verify it in Part E / later implementation |
+|---|---|---|
+| **A — address/pin confirmation** | `docs/system-sds.md` §5; `docs/srs.md` FR-08/NFR-10/negative cases; `docs/features.md` AC-F03-04 | Explicit confirmation of full destination and pin; edits invalidate confirmation; stale quote/revision rejected; map failure recovery; **no automatic written-address/pin equality check** per DEC-030 |
+| **B — stock concurrency** | `docs/system-sds.md` §3; `docs/features.md` AC-F04-05; `docs/srs.md` NFR-04 | Guarded atomic per-option inventory updates; last-item collision and multi-line late-failure tests against actual chosen database |
+| **C — idempotency lifecycle** | `docs/system-sds.md` §6; `docs/features.md` AC-F04-04; `docs/srs.md` NFR-05 | Unique customer/key; canonical fingerprint; successful replay; changed-payload 409; in-flight bounded retry; no committed claim on failed submit; proposed no S1 key expiry |
+| **D — status/stock transaction** | `docs/system-sds.md` §3; `docs/features.md` AC-F05-02 and AC-F06-02..04 | Status/rejection reason and all stock moves commit or roll back together; competing Cancel/Accept/Reject and injected failure tests |
+| **E — deadline/ownership** | `docs/sprints/plan.md` §4 (effort/Go–No-Go) and §5 (proposed A/B ownership) | 67–111 estimated person-hours, critical-path milestones, buffer on 7–8 Nov, confirm actual availability; formally escalate infeasible capacity rather than silently reducing scope |
+
+**Review gate:** `Chxtamos` must independently judge whether these proposed solutions are technically acceptable for the team's actual stack, and the two students must agree ownership/availability. This review request alone does not close CR-ENG-001 or approve the PR.

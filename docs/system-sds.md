@@ -1,6 +1,6 @@
 # Campus Store — System-Level Software Design Specification (Part C)
 
-> **Status:** Draft v0.1, 2026-11-02. **Business baseline approved** by FRZ-S1 (DEC-001..034, MAP-COST-001). **Technical choices below are proposed**, not evidence of an inspected/implemented group repository. No application code has been written or tested in this documentation session. Second-team-member architecture review is outstanding.
+> **Status:** Draft v0.2, 2026-11-02; revised in response to teammate's **CR-ENG-001 (PR #1, Changes Requested)**. **Business baseline approved** by FRZ-S1 (DEC-001..034, MAP-COST-001). **Technical choices below remain proposed and require re-review**, not evidence of implemented or tested behavior. The actual group repository was inspected at its documentation-only baseline; no application code or automated tests exist yet.
 >
 > **Inputs:** `srs.md`, `features.md`, `traceability.md`, `group-project/requirements-log.md`, `group-project/CONTEXT.md`; instructor `group_work_specs_v1.pdf` §§5,6.4,7–8 and `project_deliverable_1_v1.pdf` §3.3. Validate the instructor draft status against later announcements.
 
@@ -14,7 +14,7 @@ The product is a **single-store fictional Campus Store** that sells seeded unive
 
 **[CONFIRMED]** MapLibre GL JS with OpenFreeMap Public Instance is the interactive destination-pin stack. The mapping portion must not require usage payment, card or paid API key under currently observed provider terms; display correct attribution and do not guarantee perpetual free availability. The backend owns all price, stock, distance, fee and authorization decisions.
 
-**[PROPOSED]** Use the prior plan's React + Vite + TypeScript UI, Express + TypeScript modular monolith API, PostgreSQL + Prisma storage, Vitest/Supertest integration tests, and limited Playwright E2E. **Do not treat this as the actual stack until the group repo/`AGENTS.md` is inspected.** If the group repo is already implemented differently, maintain its conventions and revise this document instead of spawning a parallel app.
+**[PROPOSED]** Use the prior plan's React + Vite + TypeScript UI, Express + TypeScript modular monolith API, PostgreSQL + Prisma storage, Vitest/Supertest integration tests, and limited Playwright E2E. **Repository inspection (2026-11-02):** `Tanaboonnnnn/SE-Project-God-of-Merchandise-Store` presently contains only `README.md`, `.gitignore` and engineering docs; no application manifests/code/tests and no `AGENTS.md` were found. The stack above is therefore **not installed or approved**; record the team-approved stack and reproducible test commands in Part E before building.
 
 ## 2. Logical architecture
 
@@ -65,7 +65,14 @@ stateDiagram-v2
 
 **Stock accounting:** for each exact sellable option, Available/Reserved/Sold are separate nonnegative quantities. With no Sprint 1 restocking, `Available + Reserved + Sold` starts at the seed count and remains conserved. Reservation moves Available→Reserved. Accept moves Reserved→Sold. Reject/Cancel moves Reserved→Available. **Never reserve and decrement twice on Accept.** Across all twelve options, the seed starts at **160 Available / 0 Reserved / 0 Sold**.
 
-**[PROPOSED] Concurrency protection:** use one relational database transaction for a successful submit including line normalization, conditional inventory decrements, reservation increments, snapshots, Order and idempotency record. Conditional `available >= requested` updates or row locks (in deterministic option ordering) prevent lost updates/deadlocks. Accept/Reject/Cancel lock the Order/status and update every affected stock row in the *same* transaction; competing actions cannot both win. Database constraints and rollback prevent partial writes. Test with a real DB, not mocked persistence only.
+**[PROPOSED / CR-ENG-001 B] Last-unit inventory concurrency contract:**
+
+1. Authenticate and validate *each raw* cart line (including quantity limits), then canonicalize duplicate exact options and sort option IDs in a deterministic order.
+2. Start **one database transaction** for the entire checkout. For each option, perform a guarded atomic update equivalent to `UPDATE inventory SET available = available - :q, reserved = reserved + :q WHERE option_id = :id AND available >= :q`; require **exactly one updated row** per option. A missing row, zero rows updated, constraint failure or deadlock aborts/rolls back the **entire** transaction, including earlier option updates.
+3. Persist one `PENDING` Order, its normalized item/address/price snapshots and the idempotency result in **that same transaction**, and commit only if every invariant holds. Nonnegative database constraints backstop application checks. Real database row-level serialization/conditional-update behavior must be verified against the **chosen DB engine and isolation level** in Part E (not simulated with in-memory locks).
+4. For stock=1, two distinct customers' concurrent one-unit submissions must yield at most one committed reservation; the loser receives a stock conflict and **zero** Order/stock side effects. Cover a multi-line case where an earlier line is available but a later line fails, proving full rollback.
+
+**[PROPOSED / CR-ENG-001 D] Atomic status + stock transition contract:** For authorized `PENDING` Order transitions, begin one transaction; guard the state change with `WHERE status = 'PENDING'` (or an equivalent locked row and compare-and-swap), require exactly one winning update, then move each stored line's quantity in deterministic option order: **Accept** `reserved -> sold`; **Reject** `reserved -> available` with mandatory trimmed nonblank reason persisted in that transaction; **Cancel** `reserved -> available`. Guard `reserved >= quantity` and nonnegative balances. If **any** inventory update, reason write, DB check, or commit fails, rollback both status and all inventory changes; return a safe non-success response. A losing/duplicate Accept, Reject or Cancel must change **nothing**, including rejection reason. Test injected failures between status and stock updates and races among all three actions on a real DB. Do not use a multi-step sequence of independent commits.
 
 ## 4. Principal data model (proposed relational schema)
 
@@ -150,7 +157,7 @@ erDiagram
 | `Inventory` | option PK/FK; nonnegative Available/Reserved/Sold | Stock accounting changes in transactions; later restocking tracked separately when defined |
 | `Order` | customer FK, status, recipient/phone, address detail, subdistrict/district/province/postcode, pin lat/long, distance as computed, subtotal/fee/total, rejection reason, timestamps | Customer-submitted data/charges immutable, status/reason evolves under authorized transition |
 | `OrderItem` | order/option FKs, quantity, product & size/name and unit-price snapshots | Unique `(order_id, option_id)`; quantity 1–10 after normalization; snapshot frozen |
-| `CheckoutAttempt` | customer FK, idempotency key, fingerprint, created result/order reference; unique `(user_id, key)` | Prevent retry duplicate; retention and in-flight/error behavior resolved in F-04 contract |
+| `CheckoutAttempt` | customer FK, idempotency key, canonical request fingerprint, created result/order reference; **unique `(user_id, key)`** | A committed successful attempt and its Order/stock update are indivisible. Proposed no-expiry-in-Sprint-1 retry semantics below need Part E approval |
 
 **Currency design [PROPOSED]:** store THB prices as integer satang rather than binary floating-point; price seeds are whole baht, e.g., shirt A `25000` satang. UI may display ฿250.00. Order total is sum of persisted line snapshots and per-order shipping fee; no tax, discount or payment fields in Sprint 1. **No real schema or migration was created in this session.**
 
@@ -174,7 +181,7 @@ Use boundary unit tests 50, smallest practical value above 50, 300, and smallest
 
 **Pin validation:** numeric finite lat ∈ [-90,90] and lon ∈ [-180,180], stored at chosen precision. Delivery is Thailand only (DEC-003); **[REQUIRED GATE]** verify the actual destination eligibility approach (verified Thailand polygon or other documented method) in the F-03 contract, and test non-Thai coordinates without pretending basic range checks prove national inclusion.
 
-**Checkout review:** show all written address fields, selected pin/location and server-calculated price breakdown; require explicit confirmation every time. Changing address/pin revokes previous confirmation. When map tiles fail: no existing valid pin → block and Retry while retaining cart/contact; existing valid pin → display sufficiently clear saved location information for **reconfirmation** before continuing, after backend pin validation. No automatic postal matching or paid geocoding.
+**[CONFIRMED + PROPOSED / CR-ENG-001 A] Checkout review/reconfirmation:** show all written address fields, selected pin/location and server-calculated price breakdown; require explicit customer confirmation before **each** final checkout submission. On **any** change to recipient, phone, structured address, province/postcode or pin (and on restoration of a previously selected pin after map failure), invalidate the displayed review confirmation and related quote/revision, disable final submit and require the user to **review and confirm the updated address and pin together**. The client records which canonical destination revision was confirmed; the backend revalidates the entire submitted destination, checks that the submitted/confirmed quote revision matches the current payload and recomputes the authoritative shipping fee. A stale/mismatched revision must fail with no Order or reservation. Exact quote token/expiry mechanics are still to be agreed in F-03/F-04 Part E contracts; a client-side confirmation flag alone does **not** prove a real human click. No automatic address-to-pin matching/geocoding is performed (DEC-030). On map outage: no valid pin → preserve form and block/Retry; valid saved pin → show a clear saved location for explicit reconfirmation.
 
 **Mapping operational risk:** public map tiles are a third-party availability dependency with no S1 SLA. Provide map attribution; note mapping remains free under provider policies verified by the team at the decision date, but cloud/hosting costs are separate. Preserve map-failure tests and documentation.
 
@@ -199,7 +206,20 @@ Use boundary unit tests 50, smallest practical value above 50, 300, and smallest
 
 **Security conventions:** ownership is derived from session, never from a supplied `customerId`. Ignore/reject user-supplied price/total, shipping fee, Order Status or inventory deltas. Use parameterized database access and output encoding. Status, reason and inventory changes occur together. UI button visibility alone is never authorization.
 
-**Idempotency [CONFIRMED principle; PROPOSED mechanics]:** checkout includes unique logical submission key, bound to authenticated customer and canonical validated request fingerprint; first transaction controls Order/reservation, same-key same-request replay returns the existing logical Order, a new intended checkout uses new key, and mismatched payload with reused key returns an explicit conflict rather than modifying an existing Order. **[REQUIRED GATE]** define key format, retention, behavior when original is in progress, behavior on failed validation and HTTP status in the F-04 contract; ensure key storage and Order transaction cannot diverge on a crash.
+**[CONFIRMED principle / PROPOSED implementation — CR-ENG-001 C] Idempotency Key lifecycle for F-04:**
+
+| Case | Proposed backend contract (must be agreed/tested in Part E) |
+|---|---|
+| Creation/scope | Customer frontend generates a new UUIDv4 `Idempotency-Key` for **each intentionally new** checkout; the backend validates format, authenticates the user, and enforces a DB **unique constraint on `(customer_id, key)`**. A fresh order after Cancel requires a fresh key. |
+| Request identity | Compute a deterministic server-side fingerprint from validated canonical recipient/contact, structured address, province/postcode, selected pin and normalized/sorted option quantities. Do not trust submitted prices, totals or client-supplied customer ID. Define canonicalization/precision in F-04 Part E. |
+| First successful submit | In **one** transaction, acquire the key's unique claim, atomically reserve stock, create exactly one Order with snapshots and persist the key/fingerprint/Order association. Return **201** + Order ID. No separately committed placeholder key may survive a rolled-back checkout. |
+| Same key + same fingerprint after success | Return **200** with the **same Order ID** and its current persisted status, without inserting another Order or moving stock again (even if the Order is now Accepted/Rejected/Cancelled). |
+| Same key + different fingerprint | Return **409 `IDEMPOTENCY_KEY_REUSED`** without mutating the original Order/stock. Never reinterpret that key as permission to create a different Order. |
+| Concurrent same-key requests | DB uniqueness/transaction locking elects **one** winner. A loser checks the committed fingerprint/result and returns the existing Order on match; if still in flight after bounded waiting, return a documented retryable **409 `CHECKOUT_IN_PROGRESS`** (e.g. with `Retry-After`) rather than creating a second Order. Retry with that same key after completion. |
+| Invalid input, insufficient stock or transaction failure | Return appropriate **400** (invalid) or **409** (stock/state) / safe **5xx** for unexpected failure; **no Order, stock change or committed key claim**. A corrected retry of this *uncommitted* attempt can be retried, but a deliberately new checkout should use a new key. |
+| Expiry/retention | **No automatic idempotency-key expiry during Sprint 1**: retain successful key-to-Order associations while the Order is retained, making delayed retries safe. Any later purge/expiry policy is an explicit design/migration decision; do not silently enable a short TTL that permits duplication. |
+
+**[REQUIRED GATE]** This is a concrete **proposal**, not an already approved technical decision. F-04 Part E must reconcile database isolation, lock timeouts, canonicalization, exact error envelope and status codes with the chosen stack and obtain peer review **before code**. Tests must cover 201→200 replay, concurrent identical keys, changed payload conflict, expired-client retry, failed validation/no durable claim and DB crash/rollback boundaries.
 
 ## 7. Screens, navigation and shared UI states
 

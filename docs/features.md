@@ -1,6 +1,6 @@
 # Campus Store — Feature Inventory (Part B)
 
-> **Status:** Draft v0.1 (2026-11-02). **Business scope is frozen via FRZ-S1**, but this engineering artifact has not been reviewed by the second team member or compared with the actual group repository. No application code or tests were executed in preparing this draft.
+> **Status:** Draft v0.2 (2026-11-02), refined for teammate's **CR-ENG-001** review. **Business scope remains frozen via FRZ-S1**. The peer review requested changes; these testable technical proposals await renewed approval. The documentation-only group repository was inspected; no application code or tests have been executed.
 > **Normative business sources:** [`group-project/requirements-log.md`](group-project/requirements-log.md) DEC-001..034 + MAP-COST-001; [`group-project/CONTEXT.md`](group-project/CONTEXT.md). **Instructor references:** `group_work_specs_v1.pdf` §§5–8; `project_deliverable_1_v1.pdf` Parts A–D (the former is labelled *Draft for instructor review*).
 
 ## 1. Feature and sprint allocation
@@ -26,12 +26,12 @@ The F-IDs are stable proposed work-package identities derived from frozen decisi
 
 - **F-01 (identity):** seeded Customer/Operator, login/logout/me; permission middleware and ownership checks reused by F-04..F-06.
 - **F-02 (catalog):** six products, twelve sellable options, size-level inventory, prices; no editing by customers/operators in Sprint 1.
-- **F-03 (checkout/geo):** Thai address, MapLibre/OpenFreeMap map and pin, confirmation, backend distance fee/breakdown; no carrier and no geocoding.
-- **F-04 (order write):** raw-line validation, duplicate normalization, stock reservation in single transaction, snapshots, Idempotency Key. **Never create a partial order.**
+- **F-03 (checkout/geo):** Thai address, MapLibre/OpenFreeMap map and pin, explicit confirmation of the **current** address + pin, invalidation and **reconfirmation on every destination-field edit**, backend distance fee/breakdown; no carrier and no automatic address/pin geocoding. Proposed server-validated quote revision must match submitted destination.
+- **F-04 (order write):** raw-line validation, duplicate normalization, **guarded per-option stock updates in one DB transaction**, snapshots and `(customer_id, Idempotency-Key)` uniqueness. Proposed immutable successful-key retention throughout Sprint 1, canonical payload fingerprint, same-key replay, mismatch conflict and in-flight handling are detailed in `system-sds.md` section 6. **Never create a partial order or duplicate reservation.**
 - **F-05 (owner read/cancel):** My Orders/Order Detail latest persisted state and reason; only own Pending can Cancel; contents immutable.
 - **F-06 (operator):** one shared queue, Accept or reasoned Reject only Pending, exactly-once inventory transition under competing operations.
 
-**Cross-feature race invariant:** Acceptance/Reject/Cancel must serialize or conflict safely for one Pending Order. Every related stock movement is in the same transaction as the Order Status transition. These tests belong to F-04/F-05/F-06, not a feature left unowned.
+**Cross-feature race invariant (CR-ENG-001 B/D):** Acceptance/Reject/Cancel must serialize or conflict safely for one Pending Order via a guarded status update and conditional Reserved movements. Every stock movement and any rejection reason must commit in the **same database transaction** as the Order Status change; a losing transition or any injected DB failure must roll back **all** effects. These tests belong to F-04/F-05/F-06, not an unowned later feature.
 
 ## 3. Planned Sprint 1 acceptance criteria and software tests (Part E handoff, NOT executed)
 
@@ -59,7 +59,7 @@ AC/TEST IDs below are planned anchors for the **future** versioned feature contr
 | AC-F03-01 | TEST-F03-01 | API/UI | Invalid/blank contact, address or invalid province rejects checkout; valid forms proceed. |
 | AC-F03-02 | TEST-F03-02 | UI/API | Select valid destination map pin, preserve selected coordinates and attribution. |
 | AC-F03-03 | TEST-F03-03 | Unit/API | Backend straight-line tariff tests at 50, just over 50, 300 and just over 300 km; unrounded classification. |
-| AC-F03-04 | TEST-F03-04 | UI/API | Customer must confirm displayed address/pin; changed input invalidates prior confirmation. |
+| AC-F03-04 | TEST-F03-04 | UI/API | Confirm displayed **current** address and pin before submission; editing any recipient/contact/structured-address/province/postcode or pin field invalidates confirmation and demands re-review. A mismatched confirmed quote/destination revision fails checkout with no Order/stock change; no automatic address-to-pin matching. |
 | AC-F03-05 | TEST-F03-05 | UI/E2E | Map fails -> no-pin blocked with preserved cart/form and Retry; existing valid pin needs reconfirmation. |
 
 ### F-04 — Atomic order submission, snapshots and idempotency
@@ -69,15 +69,15 @@ AC/TEST IDs below are planned anchors for the **future** versioned feature contr
 | AC-F04-01 | TEST-F04-01 | API/DB/E2E | Persist one-or-more items, price snapshots, address/pin, authoritative subtotal+shipping and Pending. |
 | AC-F04-02 | TEST-F04-02 | API/DB | Duplicate options normalize, snapshot and zero double-reservation, reject client price/total tamper. |
 | AC-F04-03 | TEST-F04-03 | API/DB | Raw invalid line, >10 aggregate or insufficient stock rejects entire Order with zero side effects. |
-| AC-F04-04 | TEST-F04-04 | API/DB | Same-key checkout replay returns same logical result, no extra Order/reservation; new key is new intention. |
-| AC-F04-05 | TEST-F04-05 | API/DB | Concurrent oversell prevented with atomic inventory check and full rollback. |
+| AC-F04-04 | TEST-F04-04 | API/DB | Same customer+key+canonical payload replays same persisted Order ID (201 then 200), including concurrent retries and delayed retry; reused key/different payload returns 409, in-flight retry cannot double reserve; failed checkout leaves no committed key claim. A new logical Order needs a new key. |
+| AC-F04-05 | TEST-F04-05 | API/DB | Two distinct customers race for last unit: at most one commits; guarded atomic stock update prevents oversell. Multi-item late failure, transaction failure or deadlock rolls back *all* Order, stock and key effects in a real DB. |
 
 ### F-05 — Customer My Orders, status and Pending cancellation
 
 | AC ID | Planned TEST ID | Level | Observable expected outcome |
 | --- | --- | --- | --- |
 | AC-F05-01 | TEST-F05-01 | API/DB/UI | Owner retrieves persisted My Orders/Detail current status and rejection reason on refresh. |
-| AC-F05-02 | TEST-F05-02 | API/DB | Owning Customer cancels Pending once; stock released once; cannot cancel Accepted. |
+| AC-F05-02 | TEST-F05-02 | API/DB | Owning Customer cancels Pending once; status and release commit together, duplicate/stale action changes nothing; injected DB failure rolls both back; cannot cancel Accepted. |
 | AC-F05-03 | TEST-F05-03 | API | Other customer denied order/notes/cancel; no ownership inference. |
 | AC-F05-04 | TEST-F05-04 | API/DB | Order contents immutable after submit; replacement requires new Order/key. |
 
@@ -86,9 +86,9 @@ AC/TEST IDs below are planned anchors for the **future** versioned feature contr
 | AC ID | Planned TEST ID | Level | Observable expected outcome |
 | --- | --- | --- | --- |
 | AC-F06-01 | TEST-F06-01 | API/UI | Operator sees all store orders, customer lacks queue access. |
-| AC-F06-02 | TEST-F06-02 | API/DB | Accept Pending once; reserved -> sold exactly once; no double deduct. |
-| AC-F06-03 | TEST-F06-03 | API/DB | Reject Pending requires nonblank reason; reason+release persisted atomically; owner can view. |
-| AC-F06-04 | TEST-F06-04 | API/DB | Role/status and Accept/Reject/Cancel race denied or resolved with exactly one legal terminal transition. |
+| AC-F06-02 | TEST-F06-02 | API/DB | Accept Pending once; guarded status change and reserved -> sold commit atomically, without double deduction; simulated stock-update failure rolls both back. |
+| AC-F06-03 | TEST-F06-03 | API/DB | Reject Pending requires nonblank reason; reason+status+release commit atomically; failure rolls all back and owner can view persisted reason after success. |
+| AC-F06-04 | TEST-F06-04 | API/DB | Role/status and simultaneous Accept/Reject/Cancel race resolve to exactly one winning terminal transition. The losing action makes no changes to status, stock or reason; real-DB fault injection confirms no partial commits. |
 
 ## 4. Definition of Done and work prerequisites
 

@@ -1,6 +1,6 @@
 # Campus Store — Three-Sprint Delivery Plan (Part D)
 
-> **Status:** Draft v0.1, 2026-11-02. Business scope of **Sprint 1 is frozen by FRZ-S1 (DEC-001..034 and MAP-COST-001)**. Actual code/repository state, team capacity estimates and review are **not verified** in this document. No implementation or test execution was performed for this planning update.
+> **Status:** Draft v0.2, 2026-11-02; revised for teammate **CR-ENG-001 (PR #1, Changes Requested)**. Business scope of **Sprint 1 remains frozen by FRZ-S1 (DEC-001..034 and MAP-COST-001)**. The group repo was inspected at its documentation-only starting state; **actual team availability, stack and estimates are not yet validated**. No application implementation or test execution has occurred.
 >
 > **Instructor source:** `group_work_specs_v1.pdf` §§4,7–9 and `project_deliverable_1_v1.pdf` §3.4. Source master is labelled *Draft for instructor review*. Check for latest authoritative version before final submission.
 
@@ -54,32 +54,61 @@ flowchart TD
 | Date | Work and validation gate | Assignment / reviewer intent |
 |---|---|---|
 | **2 Nov** | FRZ-S1 approved; draft Part A–D; record plan conflict, decision trace, evidence gaps | Both review requirements and sign off the baseline; no code in this documentation session |
-| **3 Nov** | Inspect group repo + `AGENTS.md`, confirm origin/datasets/stack; finalize S1 F-01..F-06 contracts and STS; create/link scoped Issues | Both contribute contracts; each reviews the other's proposed design |
+| **3 Nov** | Inspect repo baseline and confirm origin/datasets/stack; finalize S1 F-01..F-06 contracts/STS and response to CR-ENG-001. **Do not create additional Issues until PR #1 receives teammate approval/merge**, as agreed by the team. | Both contribute contracts; cross-review, confirm available hours and assignment |
 | **4 Nov** | Build/test identity and catalog foundation with migrated/seeded DB (only after contract gate) | Split vertical slices; reciprocal PR review |
 | **5 Nov** | Implement/test map/checkout distance/fee and transactional order submission + snapshots/idempotency | Shared review of backend cost/stock test cases |
 | **6 Nov** | Complete Customer order list/cancel and Operator Accept/Reject; cover permission failures, invalid input and races | Both write tests and inspect each other's status changes |
 | **7 Nov** | Integration/staging, regression/E2E, review release PR, record SHA, gather real evidence | Both verify and review; feature scope hard stop, fix defects |
 | **8 Nov** | Reproduce setup/build/tests on release SHA; compile *self-contained* Parts A–F PDF including actual counts/PRs/screenshots; submit through LEB2 before 23:59 | Both sign off what is actually passing, disclose failures/skips |
 
-**Risk assessment:** **HIGH**: six dependent Sprint 1 feature groups plus a new map/shipping subsystem and multi-actor stock concurrency are ambitious for two students in six calendar days. The schedule is a tentative critical path; **do not assert it is feasible without checking existing code and actual team availability**. If it fails, request a formal FRZ-S1 scope change (with impacts) rather than silently omitting approved features.
+**Risk assessment:** **HIGH**: six dependent Sprint 1 feature groups plus a new map/shipping subsystem and multi-actor stock concurrency are ambitious for two students. The schedule is a tentative critical path; do not assert feasibility without confirming both members' hours and completing a proof-of-concept on the actual database. If it fails, raise a formal FRZ-S1 scope-change request (with impact and instructor consultation as appropriate) rather than silently omitting approved features.
+
+### CR-ENG-001 E — Estimated effort, dependencies and capacity gates (proposal, NOT commitments)
+
+The following are **initial planning ranges in total person-hours**, not time logs or promises. They assume a greenfield repository (confirmed on 2 Nov), a chosen relational DB and both members able to contribute. If a reusable starter is adopted or any integration fails, re-estimate. **Do not create the candidate GitHub Issues until the current PR #1 review is accepted.**
+
+| Work package | Proposed owner / reviewer | Dependencies | Estimated person-hours | Exit evidence / gate |
+|---|---|---|---:|---|
+| GP-01 readiness, stack, coordinates | Both / reciprocal | None | 3–5 | Source-verified origin, DB/stack and test commands recorded |
+| GP-02 requirements/design review | A / B | FRZ-S1 | 2–4 | PR #1 reviewed; requested changes addressed |
+| GP-03 Part E contracts, F-01..06 | Split A: F-01/04/05, B: F-02/03/06; reciprocal review | GP-01/02 | 8–14 | Reviewed UI/API/data/AC/STS/DoD before code |
+| F-01 login and authorization | A / B | GP-03 | 6–10 | Real seeded login/role/negative tests |
+| F-02 catalog and stock | B / A | GP-03 | 5–8 | DB seed and 6-product/12-option read tests |
+| F-03 delivery/map/fee | B / A | F-01, F-02, verified origin | 9–15 | Pin/reconfirmation + boundary/outage tests |
+| F-04 atomic order and idempotency | A / B | F-01..03 | 12–20 | Real-DB oversell/retry/mismatch/rollback tests |
+| F-05 Customer history/cancel | A / B | F-04 | 5–8 | Owner/status and atomic-cancel tests |
+| F-06 Operator accept/reject | B / A | F-04 | 5–9 | Mandatory reason, status/stock fault and race tests |
+| Integration, reviewed release, Part F PDF | Both / reciprocal | F-01..06 | 12–18 | Staging smoke/regression, actual SHA/tests, PDF |
+
+**Total planning range: 67–111 person-hours.** Over six dates (3–8 Nov), two contributors would need roughly **5.6–9.3 productive hours/person/day** with little slack; actual availability is **not yet confirmed**, so this is **AT RISK**, not an approved feasible commitment. These figures include an explicit integration/evidence block; they do not justify deleting frozen features. The team should record actual available hours and revise estimates before committing to the schedule.
+
+**Dependency-aware Go/No-Go checkpoints:**
+
+1. **Before coding:** PR #1 review outcome recorded; team-approved Part E and DB choice; origin coordinates verified; no outstanding requirements conflict. An unapproved Part E is **No-Go**.
+2. **By end of 4 Nov (planning target):** F-01/02 functional on a real DB with tests; either demonstrate that F-03/F-04 architecture is viable or log a critical-path risk. Both members cross-review.
+3. **By end of 5 Nov:** Demonstrate validated address/pin + authoritative fee and **one** fully persisted Order transaction; test last-unit contention and same-key retry. Failure to demonstrate -> **escalate schedule/feasibility immediately**, not assume more time will appear.
+4. **By end of 6 Nov:** F-05/06 Pending transitions and atomic rollback/race tests verified; run a vertical UI→API→DB smoke test, with both authors reviewing one another.
+5. **7 Nov reserved for integration/peer review/defect fixes, 8 Nov for reproducibility, evidence and submission.** If implementation overruns, record missing evidence explicitly and seek an approved scope/deadline plan rather than relabeling incomplete work as Done.
+
+**Ownership is a team proposal only:** A = `Tanaboonnnnn`, B = `Chxtamos`; neither assignment nor time commitment is accepted on GitHub until both explicitly agree. Each student writes and tests their own slice and substantively reviews the other's PR. High-risk F-03/F-04 integration is pair-verified regardless of lead.
 
 ## 5. Ownership and cross-review (proposed, not assigned in GitHub)
 
 | Workstream | Student A lead (proposed) | Student B lead (proposed) | Shared verification |
 |---|---|---|---|
-| Requirements & design | SRS, F-01/05/06 contracts | SDS, traceability, F-02/03/04 contracts | Both co-review, both can explain any FR/AC/TEST |
-| Implementation | F-01, F-05, F-06 | F-02, F-03, F-04 | Pair on integration and concurrent inventory behavior |
-| Test and review | Own auth/ownership, critique stock rules | Own pricing/stock, critique operator lifecycle | Each reviews other's PR; neither self-approves |
+| Requirements & design | SRS, F-01/04/05 contracts | SDS, traceability, F-02/03/06 contracts | Both co-review, both can explain any FR/AC/TEST |
+| Implementation | F-01, F-04, F-05 | F-02, F-03, F-06 | Pair on F-03→F-04 integration and concurrent inventory behavior |
+| Test and review | Own auth, atomic checkout/idempotency and Customer cancel; critique B's catalog/map/Operator tests | Own catalog/map and Operator transitions; critique A's auth/checkout/Customer tests | Each reviews other's PR; neither self-approves |
 | Release, evidence, defect triage | Both | Both | Tag SHA, test counts, PDF evidence and AI-use statement |
 
 The instructor requires two people to participate in requirements, design, implementation, testing and review; permanent role segregation into 'docs only' versus 'code only' is **not** acceptable.
 
-## 6. Candidate GitHub Issues (9 work packages; none created by this document)
+## 6. Candidate GitHub Issues (9 work packages; only GP-02 has an existing actual Issue)
 
 | Issue | Scope/feature references | Prerequisite | Acceptance gate and evidence |
 |---|---|---|---|
 | GP-01 | Repo readiness, stack, origin coordinate, env/seed strategy | None | Repo/`AGENTS.md` audit and provenance; branch workflow recorded |
-| GP-02 | Part A–D source-grounded baseline | FRZ-S1 | Both review and agree stable FR/BR/NFR/F/DEC trace |
+| GP-02 | Part A–D source-grounded baseline — **existing GitHub Issue #2, PR #1** | FRZ-S1 | Both review and agree stable FR/BR/NFR/F/DEC trace |
 | GP-03 | Part E all F-01..F-06 contracts | GP-01/02 | Versioned SDS/UI/API/data/AC/STS/DoD before implementation |
 | GP-04 | F-01 auth/roles | GP-03 | Valid/invalid login, logout, unauth/role tests |
 | GP-05 | F-02 catalog seed/stock | GP-03 | 6 products, 12 options, 160 initial units + prices |
@@ -88,7 +117,7 @@ The instructor requires two people to participate in requirements, design, imple
 | GP-08 | F-05/06 Customer and Operator transitions | GP-07 | Owner/cancel and Operator accept/reason reject races verified |
 | GP-09 | Integration and Part F release/PDF | GP-04..08 | Reviewed PRs into staging then main, SHA, real test/evidence index and LEB2 PDF |
 
-IDs `GP-01..09` are **planning labels**. Do not claim actual GitHub Issue numbers or URLs. Each implementation Issue should link Feature, requirements, approved DEC, contract, AC and TEST IDs and identify author/reviewer.
+IDs `GP-01..09` are **planning labels**, not GitHub issue numbers. **Only GP-02 corresponds to the already-created [Issue #2](https://github.com/Tanaboonnnnn/SE-Project-God-of-Merchandise-Store/issues/2) and [PR #1](https://github.com/Tanaboonnnnn/SE-Project-God-of-Merchandise-Store/pull/1).** The other eight candidates have **not** been created; wait for PR #1 approval/merge as the team requested. Each future implementation Issue should link Feature, requirements, approved DEC, contract, AC and TEST IDs and identify author/reviewer.
 
 ## 7. Sprint 2 and 3 design questions (not reasons to unfreeze Sprint 1)
 
@@ -108,7 +137,7 @@ Draft each feature contract when the sprint is approaching, preserving FR/BR/NFR
 | SRS, feature inventory, traceability, SDS and this plan (Parts A–D) | **Draft only; pending review** | Both |
 | F-01..06 Feature SDS + UI/API/data contracts + AC/STS/DoD (Part E) | **Not authored as standalone contracts** | Both before code |
 | Running app UI→API→DB, tests, negative/owner/race evidence (Part F) | **Not verified; not executed during this task** | Both during implementation |
-| Actual group repo URL, branch/PR/issue and `main` release SHA | **Unknown / not verified** | Both once repo is inspected |
+| Group repo and doc PR / `main` S1 release SHA | **Repo confirmed** `Tanaboonnnnn/SE-Project-God-of-Merchandise-Store`; **PR #1** to `sprint/1-staging`, **Issue #2** under review. No completed S1 release SHA | Both; obtain reviewed release SHA only after build/test/merge |
 | Test command output with pass/fail/skip + red→green TDD evidence | **No execution evidence** | Both, cite exact release SHA |
 | Self-contained A–F LEB2 submission PDF | **Not created** | Both before 8 Nov deadline |
 | Docker/GCP and pipeline | **Lab 5 future checkpoint, not S1 requirement** | Both in later lab |
